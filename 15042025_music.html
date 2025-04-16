@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Music Therapy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: 'Dancing Script', cursive;
+      background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+      overflow-x: hidden;
+      color: #2c2c2c;
+    }
+
+    h1, p {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 1.5em;
+      margin-bottom: 40px;
+    }
+
+    textarea {
+      display: block;
+      margin: 0 auto 30px;
+      width: 90%;
+      max-width: 800px;
+      height: 160px;
+      padding: 15px;
+      border-radius: 15px;
+      border: none;
+      font-size: 1.2em;
+      font-family: 'Dancing Script', cursive;
+      background-color: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .audio-section, .upload-section {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    audio {
+      margin: 15px 10px;
+    }
+
+    input[type="file"] {
+      font-size: 1.1em;
+      font-family: 'Dancing Script', cursive;
+      background-color: rgba(255, 255, 255, 0.85);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    canvas {
+      display: block;
+      margin: 20px auto;
+      background-color: rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+      max-width: 90%;
+    }
+
+    .floating-notes {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .note {
+      position: absolute;
+      color: white;
+      font-size: 2em;
+      animation: floatUp 6s infinite;
+      opacity: 0.5;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+      50% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(-10vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="floating-notes" id="floatingNotes"></div>
+
+  <h1>MUSIC & U</h1>
+  <p>Recover & Re-live with Us</p>
+
+  <textarea placeholder="With music in the air, we tend to see, hear, remember, and move beautifully and gracefully.
+And the most beautiful thing about music is that it transcends most anything.
+
+Music, in its purest digital form, has become more than just sound—it’s a bridge to lost memories, emotions, and connection for those battling neurodegenerative conditions. 
+As a form of therapy, music transcends language and logic, reaching parts of the brain untouched by disease. 
+For patients with Alzheimer’s, Parkinson’s, or dementia, a familiar melody can spark recognition, calm anxiety, and rekindle joy.  
+
+In the digital age, music therapy has evolved—personalized playlists, virtual soundscapes, and interactive music apps allow patients to reconnect with their inner selves, anytime and anywhere. 
+It’s not just about listening; it’s about feeling, remembering, and healing through rhythm and harmony.  
+
+This therapy doesn’t promise a cure, but it offers something just as powerful: a moment of peace, a glimpse of clarity, a smile. 
+Music, digitized and delivered with intention, becomes a gentle companion on a journey through fading memories—an invisible thread between the mind and the soul."></textarea>
+
+  <div class="audio-section">
+    <h2>Music Sessions</h2>
+    <audio controls>
+      <source src="C:\Users\Abc\Desktop\IIT-B\Project\Carnatic Instrumental.mp3" type="audio/mpeg">
+    </audio>
+    <audio controls>
+      <source src="C:\Users\Abc\Desktop\IIT-B\Project\Mozart.mp3" type="audio/mpeg">
+    </audio>
+    <audio controls>
+      <source src="C:\Users\Abc\Desktop\IIT-B\Project\Beethoven.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+
+  <div class="upload-section">
+    <h2>Add Your Music Here</h2>
+    <input type="file" accept="audio/*" id="fileInput">
+    <div id="uploaded-audio"></div>
+    <canvas id="visualizer" width="800" height="200"></canvas>
+  </div>
+
+  <script>
+    // Floating notes
+    const notes = ['🎵', '🎶', '♬', '♩', '♫'];
+    const floating = document.getElementById('floatingNotes');
+    for (let i = 0; i < 25; i++) {
+      const span = document.createElement('span');
+      span.classList.add('note');
+      span.innerText = notes[Math.floor(Math.random() * notes.length)];
+      span.style.left = Math.random() * 100 + 'vw';
+      span.style.animationDuration = (3 + Math.random() * 5) + 's';
+      span.style.fontSize = (1 + Math.random() * 2) + 'em';
+      floating.appendChild(span);
+    }
+
+    // Audio upload and waveform visualization
+    const fileInput = document.getElementById('fileInput');
+    const audioContainer = document.getElementById('uploaded-audio');
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+
+    let audioContext, analyser, source, dataArray, bufferLength;
+
+    function visualize(audio) {
+      if (audioContext) audioContext.close();
+      audioContext = new AudioContext();
+      source = audioContext.createMediaElementSource(audio);
+      analyser = audioContext.createAnalyser();
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+      analyser.fftSize = 256;
+      bufferLength = analyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        let barWidth = (canvas.width / bufferLength) * 2.5;
+        let barHeight;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          barHeight = dataArray[i];
+          ctx.fillStyle = `rgba(${barHeight+100},50,150,0.7)`;
+          ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+          x += barWidth + 1;
+        }
+      }
+
+      draw();
+    }
+
+    fileInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        const audioURL = URL.createObjectURL(file);
+
+        // Clear previous audio
+        audioContainer.innerHTML = '';
+
+        const newAudio = document.createElement('audio');
+        newAudio.controls = true;
+        newAudio.src = audioURL;
+        newAudio.autoplay = true;
+        audioContainer.appendChild(newAudio);
+
+        newAudio.addEventListener('play', () => {
+          visualize(newAudio);
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
